@@ -1,16 +1,17 @@
 {
   "name": "genpark-raft-distributed-consensus-state-machine-skill",
   "version": "1.0.0",
-  "description": "Raft distributed consensus state machine with leader election, log replication, and commit index synchronization.",
-  "author": "GenPark AI",
-  "license": "Apache-2.0",
+  "description": "Autonomous Agent Raft Consensus State Machine with Leader Election, Heartbeats & Log Replication",
+  "entry_point": "client.py",
+  "example": "example_usage.py",
+  "mcp_server": "mcp_server.py",
   "dependencies": [],
-  "keywords": [
-    "raft",
-    "consensus",
-    "state-machine",
-    "leader-election",
-    "multi-agent",
-    "agentic-ai"
+  "tags": [
+    "genpark-skill",
+    "agentic-ai",
+    "distributed-systems",
+    "raft-consensus",
+    "state-machine-replication",
+    "leader-election"
   ]
 }

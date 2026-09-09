@@ -1,1 +1,1 @@
-# Zero pip dependencies - Pure Python 3.9+ standard library
+# Zero external dependencies\n# Standard library only\n

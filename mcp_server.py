@@ -1,36 +1,54 @@
-"""
-MCP Server for Raft Distributed Consensus State Machine Skill
-"""
-
+"""MCP Server for Raft Consensus Skill."""
 import json
 import sys
-from client import RaftCluster
-
-cluster = RaftCluster(["agent-node-1", "agent-node-2", "agent-node-3"])
-cluster.start_election("agent-node-1")
-
-def handle_call(name: str, args: dict) -> dict:
-    if name == "propose_state":
-        cmd = args.get("command", "SET")
-        payload = args.get("payload", {})
-        committed = cluster.propose(cmd, payload)
-        return {"committed": committed, "leader": cluster.leader_id, "state": cluster.nodes[cluster.leader_id].state_machine}
-    elif name == "get_state":
-        nid = args.get("node_id", cluster.leader_id)
-        node = cluster.nodes.get(nid)
-        if node:
-            return {"node_id": nid, "role": node.role, "term": node.current_term, "commit_index": node.commit_index, "state": node.state_machine}
-        return {"error": "Node not found"}
-    return {"error": f"Unknown tool: {name}"}
+from client import RaftNode
 
 def main():
     for line in sys.stdin:
         if not line.strip():
             continue
-        req = json.loads(line)
-        res = handle_call(req.get("method"), req.get("params", {}))
-        sys.stdout.write(json.dumps(res) + "\n")
-        sys.stdout.flush()
+        try:
+            req = json.loads(line)
+            req_id = req.get("id")
+            method = req.get("method")
+            params = req.get("params", {})
+
+            if method == "tools/list":
+                res = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "tools": [{
+                            "name": "propose_raft_entry",
+                            "description": "Propose command to Raft consensus cluster",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "node_id": {"type": "string"},
+                                    "peers": {"type": "array", "items": {"type": "string"}},
+                                    "command": {}
+                                },
+                                "required": ["node_id", "peers", "command"]
+                            }
+                        }]
+                    }
+                }
+            elif method == "tools/call":
+                args = params.get("arguments", {})
+                node = RaftNode(args["node_id"], args["peers"])
+                node.start_election()
+                node.append_entry(args["command"])
+                res = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {"content": [{"type": "text", "text": json.dumps(node.get_status())}]}
+                }
+            else:
+                res = {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": "Method not found"}}
+            print(json.dumps(res), flush=True)
+        except Exception as e:
+            err = {"jsonrpc": "2.0", "id": None, "error": {"code": -32000, "message": str(e)}}
+            print(json.dumps(err), flush=True)
 
 if __name__ == "__main__":
     main()
